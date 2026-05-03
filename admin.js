@@ -140,8 +140,6 @@ function renderTable() {
   const filtered = adminItems.filter(function(item) {
     const status = (item.status || "pending").toLowerCase();
 
-    // If search box has text, search all applications regardless of tab.
-    // If search box is empty, follow the selected filter tab.
     if (!search) {
       if (currentFilter === "active") {
         if (!(status === "pending" || status === "approved")) return false;
@@ -270,7 +268,7 @@ function viewDetails(id) {
 
       .card-info {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 130px;
+        grid-template-columns: minmax(0, 1fr) 140px;
         border: 2px solid #111;
         margin-bottom: 16px;
         width: 100%;
@@ -309,11 +307,12 @@ function viewDetails(id) {
         font-weight: bold;
         text-align: center;
         padding: 8px;
+        min-height: 130px;
       }
 
       .photo-area img {
-        width: 88px;
-        height: 88px;
+        width: 95px;
+        height: 95px;
         object-fit: cover;
         margin-top: 6px;
         border: 1px solid #111;
@@ -407,24 +406,46 @@ function viewDetails(id) {
       .reject-btn { background: #dc2626; }
 
       @media(max-width:768px) {
-        .card-info {
+        .card-view {
+          padding: 12px;
+        }
+
+        .card-header {
           grid-template-columns: 1fr;
+          text-align: center;
+        }
+
+        .card-header img {
+          margin: 0 auto 8px;
+        }
+
+        .card-info {
+          display: flex;
+          flex-direction: column-reverse;
+          border: 2px solid #111;
         }
 
         .photo-area {
           border-left: none;
-          border-top: 2px solid #111;
+          border-top: none;
+          border-bottom: 2px solid #111;
           padding: 12px;
+          min-height: auto;
+        }
+
+        .photo-area img {
+          width: 110px;
+          height: 110px;
+        }
+
+        .info-table td:first-child {
+          width: 125px;
         }
 
         .signature-row,
         .bottom-row {
           grid-template-columns: 1fr;
           gap: 30px;
-        }
-
-        .info-table td:first-child {
-          width: 120px;
         }
       }
     </style>
@@ -469,7 +490,7 @@ function viewDetails(id) {
           ${
             item.photo
               ? `<img src="${item.photo}" alt="Photo">`
-              : ""
+              : `<div style="margin-top:6px;font-size:11px;font-weight:normal;">No Photo</div>`
           }
         </div>
       </div>
