@@ -1,0 +1,42 @@
+FIREBASE SETUP
+
+1. Firebase Console > Authentication > Sign-in method
+   Enable: Email/Password
+
+2. Firebase Console > Firestore Database
+   Create database.
+
+3. Firestore rules for testing/development:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    match /users/{userId} {
+      allow create: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow update: if isAdmin();
+    }
+
+    match /sss-submissions/{submissionId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}
+
+4. Make first admin:
+   Register normally, then in Firestore open users/{yourUid} and change:
+   role: "admin"

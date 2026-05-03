@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta charset="UTF-8">
+    <title>SSS Company Representative Authorization</title>
+    <link rel="stylesheet" href="form.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+        /* Override conflicting form.css styles */
+        .header-with-logo {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 20px !important;
+            margin-bottom: 20px !important;
+            padding-bottom: 15px !important;
+            border-bottom: 2px solid #003c8f !important;
+        }
+
+        .logo-container {
+            flex-shrink: 0 !important;
+        }
+
+        .logo-container img {
+            width: 85px !important;
+            height: 70px !important;
+            margin-bottom: 0 !important;
+        }
+
+        .sss-header {
+            text-align: left !important;
+        }
+
+        .sss-header h1 {
+            font-size: 18px !important;
+            font-weight: bold !important;
+            margin: 0 0 5px 0 !important;
+            color: #003c8f !important;
+        }
+
+        .branch {
+            font-size: 14px !important;
+            font-weight: bold !important;
+            color: hwb(0 38% 62%) !important;
+            margin: 5px 0 !important;
+        }
+
+        .address, .tel {
+            font-size: 12px !important;
+            color: #555 !important;
+            margin: 2px 0 !important;
+        }
+
+        /* Additional modal styles not in form.css */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .modal-canvas {
+            background: white;
+            border: 2px solid #003c8f;
+            border-radius: 8px;
+            width: 100%;
+            height: auto;
+            cursor: crosshair;
+            margin: 10px 0;
+        }
+
+        .option-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .option-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .option-btn.draw {
+            background: #003c8f;
+            color: white;
+        }
+
+        .option-btn.camera {
+            background: #28a745;
+            color: white;
+        }
+
+        .option-btn.upload {
+            background: #ff9800;
+            color: white;
+        }
+
+        .option-btn.active {
+            transform: scale(1.02);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        #cameraVideo {
+            width: 100%;
+            height: 200px;
+            background: #000;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .modal-btn.cancel-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        .modal-btn.save-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .modal-btn.clear-btn {
+            background: #6c757d;
+            color: white;
+        }
+
+        .upload-preview-area {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .upload-preview-area img {
+            max-width: 100%;
+            max-height: 100px;
+            border: 1px solid #003c8f;
+            border-radius: 4px;
+        }
+
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+        }
+
+        .popup-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 2001;
+            min-width: 280px;
+        }
+
+        .signature-canvas-container {
+            background: white;
+            border: 2px solid #003c8f;
+            border-radius: 8px;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .signature-canvas, .employer-canvas {
+            width: 100%;
+            height: 100px;
+            background: white;
+            display: block;
+            border-radius: 6px;
+            cursor: crosshair;
+        }
+
+        .photo-box {
+            cursor: pointer;
+        }
+
+        .form1-container {
+            border: 2px solid #003c8f;
+        }
+
+        .signature-label {
+            font-weight: bold;
+            text-align: center;
+            background: #003c8f;
+            color: white;
+            padding: 6px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+        }
+
+        .signature-actions {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .sign-btn, .clear-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .sign-btn {
+            background: #003c8f;
+            color: white;
+        }
+
+        .sign-btn:hover {
+            background: #002a66;
+        }
+
+        .clear-btn {
+            background: #6c757d;
+            color: white;
+        }
+
+        .name-input {
+            margin-top: 10px;
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .primary-btn {
+            background: #003c8f;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .primary-btn:hover {
+            background: #002a66;
+            transform: scale(1.02);
+        }
+
+        /* Fix for form-container background */
+        .form-container {
+            background: white !important;
+        }
+
+        /* ===== MOBILE LAYOUT FIXES - ADDED ONLY ===== */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                margin: 0;
+            }
+            
+            .form-container {
+                padding: 15px !important;
+                border-radius: 15px !important;
+            }
+            
+            .header-with-logo {
+                gap: 12px !important;
+                flex-wrap: wrap !important;
+                text-align: center !important;
+            }
+            
+            .sss-header {
+                text-align: center !important;
+            }
+            
+            .sss-header h1 {
+                font-size: 16px !important;
+            }
+            
+            .branch {
+                font-size: 12px !important;
+            }
+            
+            .address, .tel {
+                font-size: 10px !important;
+            }
+            
+            .logo-container img {
+                width: 60px !important;
+                height: 50px !important;
+            }
+            
+            .form-title h2 {
+                font-size: 16px !important;
+                text-align: center !important;
+            }
+            
+            .employer-header {
+                flex-direction: column !important;
+            }
+            
+            .info-table td {
+                display: block !important;
+                width: 100% !important;
+                padding: 5px 0 !important;
+            }
+            
+            .info-table td:first-child {
+                font-weight: bold;
+                margin-bottom: 3px;
+            }
+            
+            .info-table tr {
+                display: block !important;
+                margin-bottom: 12px !important;
+            }
+            
+            .photo-section {
+                margin-top: 10px !important;
+            }
+            
+            .photo-box {
+                width: 120px !important;
+                margin: 0 auto !important;
+            }
+            
+            .authorization-text {
+                font-size: 12px !important;
+                padding: 12px !important;
+            }
+            
+            .inline-input {
+                width: 100% !important;
+                margin: 5px 0 !important;
+                display: block !important;
+            }
+            
+            .signatures-side-by-side {
+                flex-direction: column !important;
+                gap: 25px !important;
+            }
+            
+            .signature-canvas, .employer-canvas {
+                height: 80px !important;
+            }
+            
+            .signature-actions {
+                flex-direction: row !important;
+            }
+            
+            .sign-btn, .clear-btn {
+                padding: 8px !important;
+                font-size: 12px !important;
+            }
+            
+            .name-input {
+                font-size: 12px !important;
+            }
+            
+            .noted-section {
+                text-align: center !important;
+            }
+            
+            .noted-line {
+                width: 180px !important;
+                margin: 8px auto !important;
+            }
+            
+            .primary-btn {
+                width: 100% !important;
+                padding: 12px !important;
+                font-size: 14px !important;
+            }
+            
+            .option-buttons {
+                flex-wrap: wrap !important;
+            }
+            
+            .option-btn {
+                font-size: 12px !important;
+                padding: 8px !important;
+            }
+            
+            .modal-content {
+                width: 95% !important;
+                padding: 15px !important;
+            }
+            
+            .modal-canvas {
+                height: 150px !important;
+            }
+            
+            #cameraVideo {
+                height: 180px !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .form-container {
+                padding: 12px !important;
+            }
+            
+            .header-with-logo {
+                gap: 8px !important;
+            }
+            
+            .sss-header h1 {
+                font-size: 14px !important;
+            }
+            
+            .branch {
+                font-size: 11px !important;
+            }
+            
+            .form-title h2 {
+                font-size: 14px !important;
+            }
+            
+            .authorization-text {
+                font-size: 11px !important;
+            }
+            
+            .modal-btn {
+                padding: 6px 15px !important;
+                font-size: 12px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="form-container form1-container">
+
+    <!-- BACK BUTTON -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <button onclick="goBackDashboard()" 
+        style="background:#003c8f; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;">
+            ← Back to Dashboard
+        </button>
+
+        <button onclick="logout()" 
+        style="background:#dc3545; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;">
+            Logout
+        </button>
+    </div>
+        <div class="header-with-logo">
+        <div class="logo-container">
+            <img src="republic-of-the-philippines-social-security-system-logo-png_seeklogo.png" alt="SSS Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='SSS';">
+        </div>
+        <div class="sss-header">
+            <h1>Social Security System</h1>
+            <div class="branch">EASTWOOD BRANCH</div>
+            <div class="address">187 ABQ Building, E. Rodriguez Jr. Ave., Bagumbayan, QC</div>
+            <div class="tel">Tel. Nos.: 8351-1605; 8351-1623</div>
+        </div>
+    </div>
+
+    <div class="form-title">
+        <h2>COMPANY REPRESENTATIVE AUTHORIZATION CARD</h2>
+    </div>
+
+    <fieldset>
+        <div class="employer-header">
+            <div class="employer-fields">
+                <table class="info-table">
+                    <tr>
+                        <td>EMPLOYER NAME:</td>
+                        <td><input type="text" id="employerName" placeholder="Enter employer name"></td>
+                    </tr>
+                    <tr>
+                        <td>EMPLOYER ID NO.:</td>
+                        <td><input type="text" id="employerId" placeholder="00-0000000-0"></td>
+                    </tr>
+                    <tr>
+                        <td>ADDRESS:</td>
+                        <td><input type="text" id="address" placeholder="Complete address"></td>
+                    </tr>
+                    <tr>
+                        <td>TELEPHONE NO.:</td>
+                        <td><input type="text" id="telephone" placeholder="+63 XXX XXX XXXX"></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="photo-section">
+                <div class="photo-label">PHOTO 1x1</div>
+                <div class="photo-box" id="photoBox">
+                    <img id="photoPreview" class="photo-preview" src="#">
+                    <div class="photo-placeholder" id="photoPlaceholder"><i>📷</i><span></span></div>
+                </div>
+<input type="file" id="photoInput" class="photo-input" accept="image/*" hidden>
+
+<button type="button" onclick="document.getElementById('photoInput').click()" 
+style="margin-top:5px; padding:5px 10px; border-radius:6px; border:none; background:#003c8f; color:white; cursor:pointer;">
+    Upload Photo
+</button>                <div id="photoError" class="error-message">Please upload a 1x1 photo</div>
+            </div>
+        </div>
+    </fieldset>
+
+    <div class="authorization-text">
+        <p>This is to certify that Mr./Ms. <input type="text" class="inline-input" id="certName" placeholder="Full Name"> with SS # <input type="text" class="inline-input" id="ssNumber" placeholder="00-0000000-0"> whose specimen signatures / initials appear below, is authorized to transact, verify and file Employer Data Change Request (R-8), Employer Registration Form (R-1), Employment Report (R-1A) and Member Data Change Request (E-4) of herein company's employees.</p>
+        <br>
+        <p>This Certification shall be valid within one (1) year from the date of issuance unless otherwise revoked and the SSS Eastwood Branch duly notified.</p>
+    </div>
+
+    <div class="signatures-side-by-side">
+        <!-- SPECIMEN SIGNATURE -->
+        <div class="signature-item">
+            <div class="signature-label">Specimen Signature
+                
+            </div>
+            <div class="signature-canvas-container">
+                <canvas id="specimenSignature1" class="signature-canvas" width="400" height="100"></canvas>
+            </div>
+            <div class="signature-actions">
+                <button type="button" class="sign-btn" onclick="openModal('specimenSignature1')">Sign</button>
+                <button type="button" class="clear-btn" onclick="clearCanvas('specimenSignature1')">Clear</button>
+            </div>
+            <input type="text" class="name-input" id="specimenName1" placeholder="Type full name">
+            <div id="specimenError1" class="error-message">Signature and name are required</div>
+        </div>
+
+        <!-- SIGNATURE OVER PRINTED NAME -->
+        <div class="signature-item">
+            <div class="signature-label">Signature Over Printed Name of Employer/Owner</div>
+            <div class="signature-canvas-container">
+                <canvas id="employerSignature" class="employer-canvas" width="400" height="100"></canvas>
+            </div>
+            <div class="signature-actions">
+                <button type="button" class="sign-btn" onclick="openModal('employerSignature')">Sign</button>
+                <button type="button" class="clear-btn" onclick="clearCanvas('employerSignature')">Clear</button>
+            </div>
+            <input type="text" class="name-input" id="employerName2" placeholder="Type full name of Employer/Owner">
+            <div id="employerError" class="error-message">Signature and name are required</div>
+        </div>
+    </div>
+
+    <div class="noted-section">
+        <div class="noted-label" style="font-weight: 600; color: #003c8f;">Noted by:</div>
+        <br></br>
+        <div class="noted-line"></div>
+        <div class="noted-name">ELEANOR F. DEATO</div>
+        <div class="noted-title">Branch Head</div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="primary-btn" type="button" onclick="goToSecondForm()">SUBMIT APPLICATION</button>
+    </div>
+</div>
+
+<!-- SIGNATURE MODAL - with Draw, Camera, and Upload options -->
+<div id="signatureModal" class="modal">
+    <div class="modal-content">
+        <h3>Add Your Signature</h3>
+        <div class="option-buttons">
+            <button class="option-btn draw" id="drawOptionBtn" onclick="selectDraw()">✏️ Draw</button>
+            <button class="option-btn camera" id="cameraOptionBtn" onclick="selectCamera()">📸 Take Photo</button>
+            <button class="option-btn upload" id="uploadOptionBtn" onclick="selectUpload()">📁 Upload</button>
+        </div>
+        
+        <!-- Draw Mode -->
+        <div id="drawMode" style="display: none;">
+            <canvas id="modalCanvas" class="modal-canvas" width="400" height="200"></canvas>
+            <div class="modal-buttons">
+                <button class="modal-btn clear-btn" onclick="clearModalCanvas()">Clear</button>
+                <button class="modal-btn cancel-btn" onclick="closeModal()">Cancel</button>
+                <button class="modal-btn save-btn" onclick="saveDrawSignature()">Save</button>
+            </div>
+        </div>
+        
+        <!-- Camera Mode -->
+        <div id="cameraMode" style="display: none;">
+            <div style="background: #000; border-radius: 8px; overflow: hidden;">
+                <video id="cameraVideo" autoplay playsinline></video>
+                <canvas id="cameraCanvas" style="display: none;"></canvas>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn" onclick="capturePhoto()" style="background:#28a745; color:white;">📸 Capture</button>
+                <button class="modal-btn cancel-btn" onclick="closeModal()">Cancel</button>
+                <button class="modal-btn save-btn" id="savePhotoBtn" style="display:none;" onclick="savePhotoSignature()">Save</button>
+            </div>
+            <div id="photoPreviewCapture" class="upload-preview-area"></div>
+        </div>
+        
+        <!-- Upload Mode -->
+        <div id="uploadMode" style="display: none;">
+            <input type="file" id="uploadFileInput" accept="image/*" style="margin: 10px 0; padding: 8px;">
+            <div id="uploadPreview" class="upload-preview-area"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel-btn" onclick="closeModal()">Cancel</button>
+                <button class="modal-btn save-btn" onclick="saveUploadSignature()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="auth-config.js"></script>
+<script src="index.js"></script>
+<script src="auth-guard.js"></script>
+<script src="form-submit.js"></script>
+
+<script>
+/* ================= PHOTO UPLOAD ================= */
+const photoInput = document.getElementById("photoInput");
+const photoPreview = document.getElementById("photoPreview");
+const photoPlaceholder = document.getElementById("photoPlaceholder");
+const photoBox = document.getElementById("photoBox");
+
+if (photoBox) {
+  photoBox.addEventListener("click", function () {
+    photoInput.click();
+  });
+}
+
+if (photoInput) {
+  photoInput.addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+      photoPreview.src = event.target.result;
+      photoPreview.style.display = "block";
+
+      if (photoPlaceholder) {
+        photoPlaceholder.style.display = "none";
+      }
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ================= SIGNATURE MODAL ================= */
+let currentCanvasId = null;
+let drawing = false;
+let cameraStream = null;
+let capturedPhotoData = null;
+
+const signatureModal = document.getElementById("signatureModal");
+const modalCanvas = document.getElementById("modalCanvas");
+const modalCtx = modalCanvas.getContext("2d");
+
+function openModal(canvasId) {
+  currentCanvasId = canvasId;
+  signatureModal.style.display = "flex";
+  clearModalCanvas();
+  selectDraw();
+}
+
+function closeModal() {
+  signatureModal.style.display = "none";
+  stopCamera();
+  capturedPhotoData = null;
+
+  const preview = document.getElementById("photoPreviewCapture");
+  if (preview) preview.innerHTML = "";
+
+  const uploadPreview = document.getElementById("uploadPreview");
+  if (uploadPreview) uploadPreview.innerHTML = "";
+}
+
+/* ================= MODE SWITCH ================= */
+function selectDraw() {
+  document.getElementById("drawMode").style.display = "block";
+  document.getElementById("cameraMode").style.display = "none";
+  document.getElementById("uploadMode").style.display = "none";
+  stopCamera();
+}
+
+function selectUpload() {
+  document.getElementById("drawMode").style.display = "none";
+  document.getElementById("cameraMode").style.display = "none";
+  document.getElementById("uploadMode").style.display = "block";
+  stopCamera();
+}
+
+async function selectCamera() {
+  document.getElementById("drawMode").style.display = "none";
+  document.getElementById("cameraMode").style.display = "block";
+  document.getElementById("uploadMode").style.display = "none";
+
+  const video = document.getElementById("cameraVideo");
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = cameraStream;
+  } catch (error) {
+    alert("Camera not available or permission denied.");
+    console.error(error);
+  }
+}
+
+/* ================= DRAW SIGNATURE DESKTOP + MOBILE ================= */
+function getCanvasPosition(e) {
+  const rect = modalCanvas.getBoundingClientRect();
+
+  let clientX;
+  let clientY;
+
+  if (e.touches && e.touches.length > 0) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
+
+  const scaleX = modalCanvas.width / rect.width;
+  const scaleY = modalCanvas.height / rect.height;
+
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY
+  };
+}
+
+function startDraw(e) {
+  drawing = true;
+  const pos = getCanvasPosition(e);
+  modalCtx.beginPath();
+  modalCtx.moveTo(pos.x, pos.y);
+  e.preventDefault();
+}
+
+function drawSignature(e) {
+  if (!drawing) return;
+
+  const pos = getCanvasPosition(e);
+
+  modalCtx.lineWidth = 2.5;
+  modalCtx.lineCap = "round";
+  modalCtx.strokeStyle = "#000";
+
+  modalCtx.lineTo(pos.x, pos.y);
+  modalCtx.stroke();
+
+  e.preventDefault();
+}
+
+function stopDraw() {
+  drawing = false;
+  modalCtx.beginPath();
+}
+
+modalCanvas.addEventListener("mousedown", startDraw);
+modalCanvas.addEventListener("mousemove", drawSignature);
+modalCanvas.addEventListener("mouseup", stopDraw);
+modalCanvas.addEventListener("mouseleave", stopDraw);
+
+modalCanvas.addEventListener("touchstart", startDraw, { passive: false });
+modalCanvas.addEventListener("touchmove", drawSignature, { passive: false });
+modalCanvas.addEventListener("touchend", stopDraw);
+
+function clearModalCanvas() {
+  modalCtx.clearRect(0, 0, modalCanvas.width, modalCanvas.height);
+}
+
+function saveDrawSignature() {
+  const targetCanvas = document.getElementById(currentCanvasId);
+  const targetCtx = targetCanvas.getContext("2d");
+
+  targetCtx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+  targetCtx.drawImage(modalCanvas, 0, 0, targetCanvas.width, targetCanvas.height);
+
+  closeModal();
+}
+
+/* ================= CLEAR SIGNATURE ================= */
+function clearCanvas(id) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+/* ================= UPLOAD SIGNATURE ================= */
+const uploadFileInput = document.getElementById("uploadFileInput");
+
+if (uploadFileInput) {
+  uploadFileInput.addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function (event) {
+      const uploadPreview = document.getElementById("uploadPreview");
+      uploadPreview.innerHTML = `<img src="${event.target.result}" alt="Signature Preview">`;
+
+      capturedPhotoData = event.target.result;
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+function saveUploadSignature() {
+  if (!capturedPhotoData) {
+    alert("Please upload an image first.");
+    return;
+  }
+
+  saveImageToTargetCanvas(capturedPhotoData);
+  closeModal();
+}
+
+/* ================= CAMERA SIGNATURE ================= */
+function capturePhoto() {
+  const video = document.getElementById("cameraVideo");
+  const cameraCanvas = document.getElementById("cameraCanvas");
+  const cameraCtx = cameraCanvas.getContext("2d");
+
+  cameraCanvas.width = video.videoWidth || 400;
+  cameraCanvas.height = video.videoHeight || 200;
+
+  cameraCtx.drawImage(video, 0, 0, cameraCanvas.width, cameraCanvas.height);
+
+  capturedPhotoData = cameraCanvas.toDataURL("image/png");
+
+  const preview = document.getElementById("photoPreviewCapture");
+  preview.innerHTML = `<img src="${capturedPhotoData}" alt="Captured Signature">`;
+
+  document.getElementById("savePhotoBtn").style.display = "inline-block";
+}
+
+function savePhotoSignature() {
+  if (!capturedPhotoData) {
+    alert("Please capture photo first.");
+    return;
+  }
+
+  saveImageToTargetCanvas(capturedPhotoData);
+  closeModal();
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+
+  const video = document.getElementById("cameraVideo");
+  if (video) {
+    video.srcObject = null;
+  }
+}
+
+/* ================= SAVE IMAGE TO TARGET CANVAS ================= */
+function saveImageToTargetCanvas(imageData) {
+  const targetCanvas = document.getElementById(currentCanvasId);
+  const targetCtx = targetCanvas.getContext("2d");
+
+  const img = new Image();
+  img.onload = function () {
+    targetCtx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+    targetCtx.drawImage(img, 0, 0, targetCanvas.width, targetCanvas.height);
+  };
+
+  img.src = imageData;
+}
+
+function goBackDashboard() {
+    window.location.href = "dashboard.html";
+}
+
+function logout() {
+    firebase.auth().signOut().then(() => {
+        window.location.href = "login.html";
+    });
+}
+</script>
+</body>
+</html>

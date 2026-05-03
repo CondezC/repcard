@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard | e-RepCard</title>
+
+<link rel="stylesheet" href="app.css">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="auth-config.js"></script>
+
+<style>
+/* DATA PRIVACY MODAL */
+.privacy-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 99999;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.privacy-box {
+  width: min(680px, 100%);
+  background: #ffffff;
+  border-radius: 26px;
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+  animation: popupIn 0.25s ease;
+}
+
+@keyframes popupIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.privacy-header {
+  background: linear-gradient(135deg, #003c8f, #005bb5);
+  color: white;
+  padding: 24px 30px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.privacy-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.privacy-header h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: white;
+}
+
+.privacy-content {
+  padding: 28px 32px 32px;
+}
+
+.privacy-content p {
+  font-size: 16px;
+  line-height: 1.65;
+  color: #334155;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.privacy-check {
+  margin-top: 20px;
+  border: 1px solid #dbe3ef;
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+}
+
+.privacy-check input {
+  width: 22px;
+  height: 22px;
+  accent-color: #003c8f;
+  cursor: pointer;
+}
+
+.privacy-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.privacy-actions button {
+  border: none;
+  padding: 15px 18px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.privacy-disagree {
+  background: #eef2f7;
+  color: #475569;
+}
+
+.privacy-disagree:hover {
+  background: #e2e8f0;
+}
+
+.privacy-agree {
+  background: #003c8f;
+  color: white;
+}
+
+.privacy-agree:hover {
+  background: #002f70;
+  transform: translateY(-1px);
+}
+
+@media(max-width:600px) {
+  .privacy-box {
+    border-radius: 20px;
+  }
+
+  .privacy-header {
+    padding: 20px;
+  }
+
+  .privacy-header h2 {
+    font-size: 22px;
+  }
+
+  .privacy-content {
+    padding: 22px;
+  }
+
+  .privacy-content p {
+    font-size: 14px;
+  }
+
+  .privacy-actions {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <h1>e-RepCard Dashboard</h1>
+      <p id="welcomeText">Loading...</p>
+    </div>
+
+    <div class="actions">
+      <a class="btn btn-green" href="form.html">New Application</a>
+      <a class="btn btn-blue" href="my-submissions.html">My Submissions</a>
+      <button class="btn btn-red" onclick="logoutUser()">Logout</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Submit Application</h2>
+      <p>Fill out the Company Representative Authorization Card.</p>
+      <a class="btn btn-blue" href="form.html">Start Application</a>
+    </div>
+
+    <div class="panel">
+      <h2>Track Status</h2>
+      <p>View your own submissions and check pending, approved, or rejected status.</p>
+      <a class="btn btn-green" href="my-submissions.html">View My Submissions</a>
+    </div>
+  </div>
+</div>
+
+<!-- DATA PRIVACY POPUP -->
+<div id="privacyModal" class="privacy-modal">
+  <div class="privacy-box">
+
+    <div class="privacy-header">
+      <div class="privacy-icon">🛡️</div>
+      <h2>Data Privacy Notice</h2>
+    </div>
+
+    <div class="privacy-content">
+      <p>
+        I consent to the collection, use, storage, sharing, and processing of my
+        personal data by the <b>Social Security System (SSS)</b> in accordance with
+        the <b>Data Privacy Act (DPA)</b> and its Implementing Rules and Regulations
+        (IRR).
+      </p>
+
+      <p>
+        I affirm my rights as a data subject, including the rights to be informed,
+        object, access, correct or dispute inaccuracies, suspend or withdraw my
+        data, data portability, and to be indemnified for damages.
+      </p>
+
+      <p>
+        I also understand my right to file a complaint with the
+        <b>National Privacy Commission (NPC)</b> for any violation of my data privacy rights.
+      </p>
+
+      <label class="privacy-check">
+        <input type="checkbox" id="privacyAgree">
+        <span>I have read and agree to the Data Privacy Policy</span>
+      </label>
+
+      <div class="privacy-actions">
+        <button class="privacy-disagree" onclick="disagreePrivacy()">Disagree & Logout</button>
+        <button class="privacy-agree" onclick="submitPrivacyChoice()">I Agree & Continue</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="auth.js"></script>
+<script src="dashboard.js"></script>
+
+<script>
+firebase.auth().onAuthStateChanged(function(user) {
+  if (!user) return;
+
+  if (localStorage.getItem("privacyAccepted") !== "yes") {
+    document.getElementById("privacyModal").style.display = "flex";
+  }
+});
+
+function submitPrivacyChoice() {
+  const checked = document.getElementById("privacyAgree").checked;
+
+  if (!checked) {
+    alert("Please check the agreement box before continuing.");
+    return;
+  }
+
+  localStorage.setItem("privacyAccepted", "yes");
+  document.getElementById("privacyModal").style.display = "none";
+}
+
+function disagreePrivacy() {
+  localStorage.removeItem("privacyAccepted");
+
+  firebase.auth().signOut().then(function() {
+    alert("You must agree to the Data Privacy Notice to continue.");
+    window.location.href = "login.html";
+  });
+}
+</script>
+</body>
+</html>
