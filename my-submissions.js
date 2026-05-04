@@ -63,7 +63,7 @@ async function loadMySubmissions(user) {
           <td>${escapeHtml(item.rejectionReason || "")}</td>
           <td>
             <a class="btn btn-blue" href="summary.html?id=${encodeURIComponent(item.id)}">View</a> 
-            </td>
+          </td>
         </tr>
       `;
     }).join("");
