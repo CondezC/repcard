@@ -46,12 +46,20 @@ async function loadMySubmissions(user) {
     body.innerHTML = submissions.map(function(item) {
       const status = (item.status || "pending").toLowerCase();
 
+      // OPTIONAL: label for approved
+      const approvedLabel = status === "approved"
+        ? `<div style="font-size:11px;color:#16a34a;font-weight:bold;">✔ Approved Document</div>`
+        : "";
+
       return `
         <tr>
           <td>${formatDate(item.timestamp)}</td>
           <td>${escapeHtml(item.certName || item.specimenName1 || "N/A")}</td>
           <td>${escapeHtml(item.employerName || "N/A")}</td>
-          <td><span class="status ${status}">${status.toUpperCase()}</span></td>
+          <td>
+            <span class="status ${status}">${status.toUpperCase()}</span>
+            ${approvedLabel}
+          </td>
           <td>${escapeHtml(item.rejectionReason || "")}</td>
           <td>
             <a class="btn btn-blue" href="summary.html?id=${encodeURIComponent(item.id)}" target="_blank">View</a>

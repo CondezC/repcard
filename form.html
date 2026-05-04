@@ -298,6 +298,15 @@
             background: white !important;
         }
 
+        .justify-text {
+            text-align: justify;
+            line-height: 1.6;
+        }
+
+        .inline-field {
+            display: inline-block;
+        }
+
         /* ===== MOBILE LAYOUT FIXES - ADDED ONLY ===== */
         @media (max-width: 768px) {
             body {
@@ -374,6 +383,11 @@
             .authorization-text {
                 font-size: 12px !important;
                 padding: 12px !important;
+            }
+
+            .authorization-text p {
+                text-align: justify !important;
+                line-height: 1.6;
             }
             
             .inline-input {
@@ -511,19 +525,19 @@
                 <table class="info-table">
                     <tr>
                         <td>EMPLOYER NAME:</td>
-                        <td><input type="text" id="employerName" placeholder="Enter employer name"></td>
+                        <td><input type="text" id="employerName" placeholder="Enter employer name" required></td>
                     </tr>
                     <tr>
                         <td>EMPLOYER ID NO.:</td>
-                        <td><input type="text" id="employerId" placeholder="00-0000000-0"></td>
+                        <td><input type="text" id="employerId" placeholder="00-0000000-0" maxlength="12" required oninput="formatEmployerId(this)"></td>
                     </tr>
                     <tr>
                         <td>ADDRESS:</td>
-                        <td><input type="text" id="address" placeholder="Complete address"></td>
+                        <td><input type="text" id="address" placeholder="Complete address" required></td>
                     </tr>
                     <tr>
                         <td>TELEPHONE NO.:</td>
-                        <td><input type="text" id="telephone" placeholder="+63 XXX XXX XXXX"></td>
+                        <td><input type="text" id="telephone" placeholder="+63 XXX XXX XXXX" required></td>
                     </tr>
                 </table>
             </div>
@@ -533,7 +547,7 @@
                     <img id="photoPreview" class="photo-preview" src="#">
                     <div class="photo-placeholder" id="photoPlaceholder"><i>📷</i><span></span></div>
                 </div>
-<input type="file" id="photoInput" class="photo-input" accept="image/*" hidden>
+<input type="file" id="photoInput" class="photo-input" accept="image/*" hidden required>
 
 <button type="button" onclick="document.getElementById('photoInput').click()" 
 style="margin-top:5px; padding:5px 10px; border-radius:6px; border:none; background:#003c8f; color:white; cursor:pointer;">
@@ -544,9 +558,23 @@ style="margin-top:5px; padding:5px 10px; border-radius:6px; border:none; backgro
     </fieldset>
 
     <div class="authorization-text">
-        <p>This is to certify that Mr./Ms. <input type="text" class="inline-input" id="certName" placeholder="Full Name"> with SS # <input type="text" class="inline-input" id="ssNumber" placeholder="00-0000000-0"> whose specimen signatures / initials appear below, is authorized to transact, verify and file Employer Data Change Request (R-8), Employer Registration Form (R-1), Employment Report (R-1A) and Member Data Change Request (E-4) of herein company's employees.</p>
-        <br>
-        <p>This Certification shall be valid within one (1) year from the date of issuance unless otherwise revoked and the SSS Eastwood Branch duly notified.</p>
+
+    <p class="justify-text">
+    This is to certify that Mr./Ms. 
+    <span class="inline-field">
+    <input type="text" class="inline-input" id="certName" placeholder="Full Name" required>
+    </span>
+    with SS # 
+    <span class="inline-field">
+    <input type="text" class="inline-input" id="ssNumber" placeholder="00-0000000-0" maxlength="12" required oninput="formatSS(this)">
+    </span>
+    whose specimen signatures / initials appear below, is authorized to transact, verify and file Employer Data Change Request (R-8), Employer Registration Form (R-1), Employment Report (R-1A) and Member Data Change Request (E-4) of herein company's employees.
+    </p>
+
+    <p class="justify-text">
+    This Certification shall be valid within one (1) year from the date of issuance unless otherwise revoked and the SSS Eastwood Branch duly notified.
+    </p>
+
     </div>
 
     <div class="signatures-side-by-side">
@@ -562,8 +590,8 @@ style="margin-top:5px; padding:5px 10px; border-radius:6px; border:none; backgro
                 <button type="button" class="sign-btn" onclick="openModal('specimenSignature1')">Sign</button>
                 <button type="button" class="clear-btn" onclick="clearCanvas('specimenSignature1')">Clear</button>
             </div>
-            <input type="text" class="name-input" id="specimenName1" placeholder="Type full name">
-            <div id="specimenError1" class="error-message">Signature and name are required</div>
+            <input type="hidden" id="specimenName1">
+<div id="specimenError1" class="error-message">Signature is required</div>
         </div>
 
         <!-- SIGNATURE OVER PRINTED NAME -->
@@ -576,7 +604,7 @@ style="margin-top:5px; padding:5px 10px; border-radius:6px; border:none; backgro
                 <button type="button" class="sign-btn" onclick="openModal('employerSignature')">Sign</button>
                 <button type="button" class="clear-btn" onclick="clearCanvas('employerSignature')">Clear</button>
             </div>
-            <input type="text" class="name-input" id="employerName2" placeholder="Type full name of Employer/Owner">
+            <input type="text" class="name-input" id="employerName2" placeholder="Type full name of Employer/Owner" required>
             <div id="employerError" class="error-message">Signature and name are required</div>
         </div>
     </div>
@@ -590,7 +618,7 @@ style="margin-top:5px; padding:5px 10px; border-radius:6px; border:none; backgro
     </div>
 
     <div class="action-buttons">
-        <button class="primary-btn" type="button" onclick="goToSecondForm()">SUBMIT APPLICATION</button>
+        <button class="primary-btn" type="button" onclick="validateAndSubmit()">SUBMIT APPLICATION</button>
     </div>
 </div>
 
@@ -905,6 +933,109 @@ function saveImageToTargetCanvas(imageData) {
 
   img.src = imageData;
 }
+
+
+function formatEmployerId(input) {
+  let value = input.value.replace(/\D/g, "").slice(0, 10);
+
+  if (value.length > 2) {
+    value = value.slice(0, 2) + "-" + value.slice(2);
+  }
+
+  if (value.length > 10) {
+    value = value.slice(0, 10) + "-" + value.slice(10);
+  }
+
+  input.value = value;
+}
+
+function formatSS(input) {
+  let value = input.value.replace(/\D/g, "").slice(0, 10);
+
+  if (value.length > 2) {
+    value = value.slice(0, 2) + "-" + value.slice(2);
+  }
+
+  if (value.length > 10) {
+    value = value.slice(0, 10) + "-" + value.slice(10);
+  }
+
+  input.value = value;
+}
+
+function isCanvasBlank(canvas) {
+  if (!canvas) return true;
+
+  const blank = document.createElement("canvas");
+  blank.width = canvas.width;
+  blank.height = canvas.height;
+
+  return canvas.toDataURL("image/png") === blank.toDataURL("image/png");
+}
+
+function validateAndSubmit() {
+  const requiredFields = [
+    "employerName",
+    "employerId",
+    "address",
+    "telephone",
+    "certName",
+    "ssNumber",
+    "employerName2"
+  ];
+
+  for (const id of requiredFields) {
+    const el = document.getElementById(id);
+
+    if (!el || !el.value.trim()) {
+      alert("Please fill out all required fields.");
+      if (el) el.focus();
+      return;
+    }
+  }
+
+  const employerId = document.getElementById("employerId").value.trim();
+  if (!/^\d{2}-\d{7}-\d{1}$/.test(employerId)) {
+    alert("Employer ID must follow this format: 00-0000000-0");
+    document.getElementById("employerId").focus();
+    return;
+  }
+
+  const ssNumber = document.getElementById("ssNumber").value.trim();
+  if (!/^\d{2}-\d{7}-\d{1}$/.test(ssNumber)) {
+    alert("SS Number must follow this format: 00-0000000-0");
+    document.getElementById("ssNumber").focus();
+    return;
+  }
+
+  const photoInput = document.getElementById("photoInput");
+  if (!photoInput.files || photoInput.files.length === 0) {
+    alert("Please upload a 1x1 photo.");
+    return;
+  }
+
+  const specimenCanvas = document.getElementById("specimenSignature1");
+  const employerCanvas = document.getElementById("employerSignature");
+
+  if (isCanvasBlank(specimenCanvas)) {
+    alert("Please add specimen signature.");
+    return;
+  }
+
+  if (isCanvasBlank(employerCanvas)) {
+    alert("Please add employer/owner signature.");
+    return;
+  }
+
+  document.getElementById("specimenName1").value = document.getElementById("certName").value.trim();
+
+  if (typeof goToSecondForm === "function") {
+    goToSecondForm();
+  } else {
+    alert("Submit function not found.");
+  }
+}
+
 
 function goBackDashboard() {
     window.location.href = "dashboard.html";

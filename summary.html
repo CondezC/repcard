@@ -204,7 +204,7 @@ body {
 .summary-auth-text {
   font-size: 13px;
   line-height: 1.55;
-  text-align: center;
+  text-align: justify;
   margin: 16px 0;
 }
 
@@ -281,11 +281,10 @@ body {
 }
 
 .summary-footer-status {
-  margin-top: 20px;
+  margin-top: 10px;
   text-align: center;
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 14px;
+  background: transparent;
+  padding: 5px 0;
 }
 
 .summary-status {
@@ -302,13 +301,21 @@ body {
 }
 
 .summary-status.approved {
-  background: #ecfdf5;
+  background: transparent;
   color: #047857;
+  font-weight: bold;
 }
 
 .summary-status.rejected {
   background: #fef2f2;
   color: #b91c1c;
+}
+
+.system-note {
+  margin-top: 1px;
+  font-size: 11px;
+  color: #333;
+  text-align: center;
 }
 
 @media print {
@@ -394,13 +401,9 @@ firebase.auth().onAuthStateChanged(function(user) {
   displaySummary(user);
 });
 
-function goBack() {
-  if (document.referrer) {
-    history.back();
-  } else {
+  function goBack() {
     window.location.href = "my-submissions.html";
   }
-}
 
 async function displaySummary(user) {
   const container = document.getElementById("summaryContainer");
@@ -540,6 +543,16 @@ async function displaySummary(user) {
             : ""
         }
       </div>
+
+      ${
+        status === "approved"
+          ? `
+            <div class="system-note">
+                 This is a system generated document. No signature required.
+            </div>
+          `
+          : ""
+      }
     `;
 
   } catch (error) {
